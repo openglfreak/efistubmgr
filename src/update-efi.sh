@@ -548,7 +548,7 @@ load_entry_data() {
         fi
         shift 2
     done
-    if [ "x${INITRD_${1}+set}" = 'xset' ]; then
+    if eval "[ \"x\${INITRD_${1}+set}\" = 'xset' ]"; then
         eval "_INITRD=\"\${INITRD_${1}}\""
     else
         set -- "$1" 0
