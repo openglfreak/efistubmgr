@@ -300,8 +300,8 @@ _update_entry() {
     fi
 
     # shellcheck disable=SC2154
-    if [ "x${initrds:+set}" = 'xset' ] && _is_true "${no_autodetect_ucode}"; then
-        if [ "x${ucode_initrds+set}" = 'xset' ]; then
+    if [ "x${initrds:+set}" = 'xset' ] && ! _is_true "${no_autodetect_ucode}"; then
+        if ! [ "x${ucode_initrds+set}" = 'xset' ]; then
             ! _is_verbose || echo 'Searching for microcode initrds'
             ucode_initrds=
             for ucode_initrd in /boot/*-ucode.img; do
