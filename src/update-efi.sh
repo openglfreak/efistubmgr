@@ -404,6 +404,31 @@ ${new_managed_entries}"
     _write_new_managed_entry_list
 }
 
+_update_bootorder() {
+    set --
+    i=0; while eval "[ \"x\${BOOTORDER_${i}+set}\" = 'xset' ]"; do
+        _old_arg_count=$#
+        eval "bootentry=\"\${BOOTORDER_${i}}\""
+        set -f 2>/dev/null ||:
+        # shellcheck disable=SC2046,SC2154
+        set -- ${1+"$@"} $(find_bootnum_from_label "${bootentry}") || return
+        set +f 2>/dev/null ||:
+        if [ $# -ne "$((_old_arg_count+1))" ]; then
+            if [ $# -eq "${_old_arg_count}" ]; then
+                printf '_update_bootorder: Boot entry not found: %s\n' "${bootentry}" >&2
+                return 1
+            else
+                printf '_update_bootorder: Boot entry found more than once: %s\n' "${bootentry}" >&2
+                return 2
+            fi
+        fi
+        i="$((i+1))"
+    done
+    if [ $# -ne 0 ]; then
+        IFS=',' eval 'efibootmgr --bootorder "$*"' >/dev/null
+    fi
+}
+
 # description:
 #   Unsets the variables _LABEL, _KERNEL, _CMDLINE, _NO_AUTODETECT_UCODE and
 #   _INITRD (or if unset _INITRD_*).
@@ -618,7 +643,8 @@ EOF
 
     _load_configs || return
     efibootmgr >/dev/null || return
-    _update_entries_and_state
+    _update_entries_and_state || return
+    _update_bootorder
 }
 
 main ${1+"$@"}
