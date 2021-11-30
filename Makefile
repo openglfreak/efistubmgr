@@ -26,7 +26,7 @@ RMDIR = rmdir --
 all: check
 
 check: $(SRCDIR)/update-efi.sh
-	$(SHELLCHECK) -a $(SRCDIR)/update-efi.sh $(EXAMPLESDIR)/*.conf
+	$(SHELLCHECK) -s sh -S style -a $(SRCDIR)/update-efi.sh $(EXAMPLESDIR)/*.conf
 
 install: $(PREFIX)/bin/update-efi
 
