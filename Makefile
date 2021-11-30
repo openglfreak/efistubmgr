@@ -41,5 +41,15 @@ uninstall:
 	-$(RMDIR) $(PREFIX)/bin 2>/dev/null || :
 	-$(RMDIR) $(PREFIX) 2>/dev/null || :
 
-.PHONY: all check install uninstall
+check-shells:
+	bash $(SRCDIR)/update-efi.sh
+	busybox sh $(SRCDIR)/update-efi.sh
+	dash $(SRCDIR)/update-efi.sh
+	ksh $(SRCDIR)/update-efi.sh
+	mksh $(SRCDIR)/update-efi.sh
+	posh $(SRCDIR)/update-efi.sh
+	yash $(SRCDIR)/update-efi.sh
+	zsh $(SRCDIR)/update-efi.sh
+
+.PHONY: all check install uninstall check-shells
 .ONESHELL:
