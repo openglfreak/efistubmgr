@@ -20,6 +20,29 @@ setopt SH_WORD_SPLIT 2>/dev/null ||:
 unsetopt NOMATCH 2>/dev/null ||:
 
 # description:
+#   Retrieves the major version of efibootmgr
+# outputs:
+#   The efibootmgr version, as an integer
+# shellcheck disable=SC2120
+get_efibootmgr_version() {
+    if [ $# -ne 0 ]; then
+        echo 'get_efibootmgr_version: Too many arguments' >&2
+        return 1
+    fi
+    while ! [ "x${__get_efibootmgr_version_cached_version+set}" = 'xset' ] \
+            || [ "${__get_efibootmgr_version_cached_version}" -eq 0 ]; do
+        __get_efibootmgr_version_cached_version="$(efibootmgr --version)" || return
+        __get_efibootmgr_version_cached_version="${__get_efibootmgr_version_cached_version#version}"
+        __get_efibootmgr_version_cached_version="$((__get_efibootmgr_version_cached_version))" || return
+        if [ "${__get_efibootmgr_version_cached_version}" -eq 0 ]; then
+            echo 'get_efibootmgr_version: Failed to parse version string' >&2
+            return 1
+        fi
+    done
+    printf '%s\n' "${__get_efibootmgr_version_cached_version}"
+}
+
+# description:
 #   Escapes a string for usage in a sed pattern.
 #   Sed expression copied from https://stackoverflow.com/a/2705678
 # params:
@@ -69,7 +92,18 @@ find_bootnum_from_label() {
             return 2
         fi
     fi
-    LC_ALL=C efibootmgr | sed -n -e 's/^Boot\([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\)[* ] '"$(sed_escape_pattern "$1")"'$/\1/p'
+    set -- "$(sed_escape_pattern "$1")"
+    # efibootmgr v18 started outputting device paths and command lines in the
+    # non-verbose output.
+    if [ "$(get_efibootmgr_version)" -ge 18 ]; then
+        LC_ALL=C efibootmgr |\
+        sed -n -e 's/^Boot\([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\)[* ] '"$1"'\t.*$/\1/p' |\
+        grep -F ''
+    else
+        LC_ALL=C efibootmgr |\
+        sed -n -e 's/^Boot\([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\)[* ] '"$1"'$/\1/p' |\
+        grep -F ''
+    fi
 }
 
 # description:
@@ -101,6 +135,12 @@ delete_bootentry_by_label() {
             return 2
         fi
     fi
+    # efibootmgr v18 introduced support for deleting boot entries by label.
+    if [ "$(get_efibootmgr_version)" -ge 18 ]; then
+        efibootmgr --label "$1" --delete-bootnum >/dev/null
+        return
+    fi
+    # For v17 and lower, fall back to manually finding and deleting entries.
     set -f 2>/dev/null ||:
     # shellcheck disable=SC2046
     set -- $(find_bootnum_from_label "$1")
