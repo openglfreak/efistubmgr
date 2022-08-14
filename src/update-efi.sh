@@ -322,6 +322,18 @@ _load_managed_entry_list() {
     fi
 }
 
+_get_esp_device_and_partition() {
+    if [ -n "${esp_device:-}" ] && [ -n "${esp_partition:-}" ]; then
+        return
+    fi
+    esp_device_and_number="$(findmnt -vkno 'SOURCE,MAJ:MIN' /boot)" || return
+    esp_device_and_number="${esp_device_and_number%"${esp_device_and_number##*[! ]}"}"
+    esp_device="${esp_device_and_number% *}"
+    esp_device_number="${esp_device_and_number#"${esp_device} "}"
+    esp_partition="$(cat "/sys/dev/block/${esp_device_number}/partition")" || return
+    [ -n "${esp_device}" ] && [ -n "${esp_partition}" ]
+}
+
 _update_entry() {
     eval "label=\"\${LABEL_$1:-}\""
     ! _is_verbose || printf 'Creating/updating boot entry "%s"\n' "${label}"
@@ -360,9 +372,14 @@ _update_entry() {
         cmdline="root=${rootdev=$(findmnt -vkno SOURCE /)} rootfstype=${rootfstype=$(findmnt -vkno FSTYPE /)} rootflags=${rootflags=$(findmnt -vkno OPTIONS /)} ${cmdline}"
     fi
 
+    if ! _get_esp_device_and_partition; then
+        echo 'error: Could not determine ESP device and partition' >&2
+        return 1
+    fi
+
     if ! _is_dry_run; then
         # shellcheck disable=SC2154
-        if ! update_bootentry "${label}" "\\${kernel}" "${cmdline}" >/dev/null; then
+        if ! update_bootentry "${label}" "\\${kernel}" "${cmdline}" "${esp_device}" "${esp_partition}" >/dev/null; then
             printf 'error: Failed to create/update boot entry "%s"\n' "${label}" >&2
             return 1
         fi
