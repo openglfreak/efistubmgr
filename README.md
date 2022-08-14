@@ -8,6 +8,7 @@ the EFISTUB functionality of the kernel.
 - A sufficiently POSIX-compliant shell at /bin/sh (bash will work)
 - Various other POSIX tools, in `$PATH` or as shell built-ins: sed, printf, [,
     mkdir, echo, cat, sort, comm (you probably have these already)
+- findmnt, from the util-linux package
 - [efibootmgr](https://github.com/rhboot/efibootmgr)
     (get it from your distro's package manager if possible)
 
