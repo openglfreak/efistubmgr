@@ -8,6 +8,7 @@
 # Author contact info:
 #   E-Mail address: openglfreak@googlemail.com
 #   PGP key fingerprint: 0535 3830 2F11 C888 9032 FAD2 7C95 CD70 C9E8 438D
+# shellcheck disable=SC2268
 
 set -e 2>/dev/null ||:
 set +C 2>/dev/null ||:
